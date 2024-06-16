@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #define ROWS 10
 #define COLUMNS 10
@@ -74,6 +75,9 @@ void displayGameTable(POSITION[]);
 // Creates table and places ships randomly
 void createTable(POSITION[]);
 
+// Places an individual ship in a random position in the board
+void placeShip(POSITION gametable[100], SHIP* ship);
+
 // Prompts for coordinates and gives feedback on attempt
 void attack(POSITION[], int*, int ePos);
 
@@ -96,7 +100,6 @@ int main(){
     int attempts = 0;
 
     createTable(gametable);
-    printf("VALUE: %c\n", gametable[5].ship->def);
     displayGameTable(gametable);
 
     for(int i=0; i<4; i++){
@@ -112,23 +115,66 @@ int main(){
 }
 
 void createTable(POSITION gametable[100]){
+    srand((unsigned) time(NULL));
+
     // Create table
     for(int i=0; i<100; i++){
         gametable[i].hit = false;
         gametable[i].ship = NULL;
     }
     
+    // Allocating ship dynamically to stay in memory through the game
     SHIP *ape = calloc(1, sizeof(SHIP));
     if (ape != NULL){
         ape->def = 'B';
         ape->sunk = false;
         ape->hits = 0;
-        ape->length = 1;
+        ape->length = 3;
         
         gametable[5].ship = ape;
     }else{
         printf("Could not create ship.");
     }
+
+    placeShip(gametable, ape);
+}
+
+void placeShip(POSITION gametable[100], SHIP* ship){
+    int valid = false;
+    do{
+        // Get 2 random numbers and multiply them to get the leading coordinate
+        int LB = 0;
+        int UB = 9;
+        int randomRow = LB + rand() % (UB - LB + 1);
+        int randomColumn = LB + rand() % (UB - LB + 1);
+
+        // Calculate effective position
+        int randomPos = ((ROWS * randomRow) + randomColumn);
+
+        // Get random number for direction: up or right: 1 is up, 0 is right
+        int up = rand() % 2;
+        // Check if direction works and place ship
+        if(up){
+            if((randomRow+1) - ship->length >= 0){
+                printf("It works at position [%i,%i] going up, with length of %i (%i)\n ",  randomRow, randomColumn, ship->length, randomPos);
+                valid = true;
+            }else{
+                printf("It does NOT work at position [%i,%i] going up, with length of %i (%i)\n",  randomRow, randomColumn, ship->length, randomPos);
+
+            }
+        }
+        else if(!up){
+            if((randomColumn-1) + ship->length < COLUMNS){
+                printf("It works at position [%i,%i] going right, with length of %i (%i)\n",  randomRow, randomColumn, ship->length, randomPos);
+                valid = true;            
+            }else{
+                printf("It does NOT work at position [%i,%i] going right, with length of %i (%i)\n",  randomRow, randomColumn, ship->length, randomPos);
+
+            }
+        }
+        // If it doesn't, calculate randoms again
+    }while(!valid);
+
 }
 
 
