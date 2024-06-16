@@ -74,8 +74,6 @@ void displayGameTable(POSITION[]);
 // Creates table and places ships randomly
 void createTable(POSITION[]);
 
-void placeShip(POSITION[], SHIP* ship);
-
 // Prompts for coordinates and gives feedback on attempt
 void attack(POSITION[], int*, int ePos);
 
@@ -98,6 +96,7 @@ int main(){
     int attempts = 0;
 
     createTable(gametable);
+    printf("VALUE: %c\n", gametable[5].ship->def);
     displayGameTable(gametable);
 
     for(int i=0; i<4; i++){
@@ -106,6 +105,9 @@ int main(){
         displayGameTable(gametable);
     }
 
+    // Freeing ships from positions
+    for(int i=0; i<100; i++) if(gametable[i].ship) free(gametable[i].ship);
+    
     return 0;
 }
 
@@ -115,15 +117,18 @@ void createTable(POSITION gametable[100]){
         gametable[i].hit = false;
         gametable[i].ship = NULL;
     }
-
-    // Place ships
-    SHIP ape = {'A', false, 3, 0};
-}
-
-void placeShip(POSITION gametable[], SHIP* ship){
-    gametable[5].ship = ship;
-    gametable[6].ship = ship;
-    gametable[7].ship = ship;
+    
+    SHIP *ape = calloc(1, sizeof(SHIP));
+    if (ape != NULL){
+        ape->def = 'B';
+        ape->sunk = false;
+        ape->hits = 0;
+        ape->length = 1;
+        
+        gametable[5].ship = ape;
+    }else{
+        printf("Could not create ship.");
+    }
 }
 
 
@@ -185,7 +190,6 @@ void attack(POSITION gametable[], int* attempts, int ePos){
         if(currentPos->ship->hits == currentPos->ship->length){
             printf("SHIP SUNK!\n");
             currentPos->ship->sunk = true;
-            printf("Tries: %i", *attempts);
         }
     }else{
         printf("\nMISSED!\n");
