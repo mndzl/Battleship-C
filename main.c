@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <ctype.h>
 
 #define ROWS 10
 #define COLUMNS 10
@@ -81,13 +82,19 @@ void placeShip(POSITION gametable[100], SHIP* ship);
 int checkShipValid(POSITION gametable[100], int row, int column, int up, int length, int shipPositions[]);
 
 // Prompts for coordinates and gives feedback on attempt
-void attack(POSITION[], int*, int ePos);
+void attack(POSITION[], int*, char[]);
 
-// Gets coordinates from user and returns translated coordinates for 1D array
-int getCoordinates(POSITION[]);
+// Returns translated coordinates for 1D array
+int get1DCoordinate(char coordinates[]);
 
 // Releases ship references from memory
 void freeShips(POSITION[]);
+
+// Returns true if coordinates are valid
+void getCoordinates(char coordinates[], POSITION gametable[]);
+
+// Exits game and clears ships
+void exitGame(POSITION[]);
 
 void red();
 void green();
@@ -101,11 +108,12 @@ void reset();
 void pause();
 
 /*
-    overnight notes
+    to-do
 
-    need to place random ships on table
-    input verification on coordination
+    input verification on coordinates
+    tries number
     binary file for saving game
+
 
 */
 
@@ -116,15 +124,25 @@ int main(){
     createTable(gametable);
     displayGameTable(gametable);
 
-    for(int i=0; i<4; i++){
-        int coordinates = getCoordinates(gametable);
+    while (true){
+        char coordinates[3];
+        getCoordinates(coordinates, gametable);
+
         attack(gametable, &attempts, coordinates);
         displayGameTable(gametable);
-    }
+    };
 
+    printf("END!");
     
     freeShips(gametable);
     return 0;
+}
+
+void exitGame(POSITION gametable[]){
+    printf("END!");
+    freeShips(gametable);
+
+    exit(1);
 }
 
 void freeShips(POSITION gametable[]){
@@ -151,6 +169,7 @@ void freeShips(POSITION gametable[]){
         free(ships[i]);
     }
 }
+
 void createTable(POSITION gametable[100]){
     srand((unsigned) time(NULL));
 
@@ -266,29 +285,39 @@ void placeShip(POSITION gametable[100], SHIP* ship){
     }while(!placed);
 }
 
+void getCoordinates(char coordinates[], POSITION gametable[]){
+    char str[10];
+    printf("Please enter coordinates (e.g., A5): "); scanf(" %s", str);
 
-int getCoordinates(POSITION gametable[]){
-    int valid = true;
-    char coordinates[2];
-    int ePos;
-    do{
-        printf("Please enter coordinates: "); scanf(" %s", coordinates);
+    if (!strcmp(str, "QQ") || !strcmp(str, "qq")) exitGame(gametable);
 
-        // Parsing
-        int row = coordinates[0] - 65;
-        int column = coordinates[1]-'0';
-        // Calculating actual position in 1D array
-        ePos = (ROWS * row) + column;
+    str[0] = toupper(str[0]);
 
-        if (gametable[ePos].hit){
-            printf("Position already hit, please select a different one.\n");
-            valid = false;
-        } else{
-            valid = true;
-        }
-    } while(!valid);
+    char row = str[0];
+    char column = str[1];
 
-    return ePos;
+
+    while(strlen(str) != 2 || row > 'J' || row < 'A' || column < '0' ){
+        printf("Coordinates are not valid, please try again: "); scanf(" %s", str);
+
+        if (!strcmp(str, "QQ") || !strcmp(str, "qq")) exitGame(gametable);
+
+        str[0] = toupper(str[0]);
+
+        row = str[0];
+        column = str[1];
+    }
+
+    strcpy(coordinates, str);
+    printf("\nSELECTED: %s\n", coordinates);
+}
+
+int get1DCoordinate(char coordinates[]){
+    int row = coordinates[0] - 65;
+    int column = coordinates[1]-'0';
+
+    // Return actual position in array
+    return (ROWS * row) + column;
 }
 
 void displayGameTable(POSITION gametable[100]){
@@ -324,8 +353,16 @@ void displayGameTable(POSITION gametable[100]){
     }
 }
 
-void attack(POSITION gametable[], int* attempts, int ePos){
-    // Update attempt number
+void attack(POSITION gametable[], int* attempts, char coordinates[]){
+    // Getting coordinates
+    int ePos = get1DCoordinate(coordinates); 
+    while(gametable[ePos].hit){
+        printf("Position %s already hit, please select a different one.\n", coordinates);
+        getCoordinates(coordinates, gametable);
+        ePos = get1DCoordinate(coordinates); 
+    }
+
+    // Updating attempt number
     (*attempts)++;
 
     // Determines effectiveness of shot
@@ -349,7 +386,6 @@ void pause() {
 	getchar();
 	getchar();
 }
-
 
 // Coloring
 void purple(){printf("\033[1;35m");};
