@@ -78,6 +78,8 @@ void createTable(POSITION[]);
 // Places an individual ship in a random position in the board
 void placeShip(POSITION gametable[100], SHIP* ship);
 
+int checkShipValid(POSITION gametable[100], int row, int column, int up, int length);
+
 // Prompts for coordinates and gives feedback on attempt
 void attack(POSITION[], int*, int ePos);
 
@@ -129,52 +131,58 @@ void createTable(POSITION gametable[100]){
         ape->def = 'B';
         ape->sunk = false;
         ape->hits = 0;
-        ape->length = 3;
+        ape->length = 4;
         
         gametable[5].ship = ape;
     }else{
         printf("Could not create ship.");
     }
 
+
     placeShip(gametable, ape);
 }
 
+int checkShipValid(POSITION gametable[100], int row, int column, int up, int length){
+    // Recursive function towards ship direction to check if it's valid
+    printf("Checking position [%i,%i] with length %i\n", row, column, length);
+    int randomPos = ((ROWS * row) + column);
+
+    if(length <= 0) {
+        printf("works!\n");
+        return true;
+    }
+    if(row < 0 || column >= COLUMNS || gametable[randomPos].ship){
+        printf("Does not work!\n");
+        return false;
+    } 
+
+    if(up) return true && checkShipValid(gametable, row-1, column, up, length-1);
+    
+    return true && checkShipValid(gametable, row, column+1, up, length-1);
+    
+}
+
 void placeShip(POSITION gametable[100], SHIP* ship){
-    int valid = false;
-    do{
-        // Get 2 random numbers and multiply them to get the leading coordinate
-        int LB = 0;
-        int UB = 9;
-        int randomRow = LB + rand() % (UB - LB + 1);
-        int randomColumn = LB + rand() % (UB - LB + 1);
+    // Get 2 random numbers and multiply them to get the leading coordinate
+    int LB = 0;
+    int UB = 9;
+    int randomRow = LB + rand() % (UB - LB + 1);
+    int randomColumn = LB + rand() % (UB - LB + 1);
+    randomRow = 2;
+    randomColumn = 7;
 
-        // Calculate effective position
-        int randomPos = ((ROWS * randomRow) + randomColumn);
+    // Calculate effective position
+    // Get random number for direction: up or right: 1 is up, 0 is right
+    int up = rand() % 2;
+    up = true;
 
-        // Get random number for direction: up or right: 1 is up, 0 is right
-        int up = rand() % 2;
-        // Check if direction works and place ship
-        if(up){
-            if((randomRow+1) - ship->length >= 0){
-                printf("It works at position [%i,%i] going up, with length of %i (%i)\n ",  randomRow, randomColumn, ship->length, randomPos);
-                valid = true;
-            }else{
-                printf("It does NOT work at position [%i,%i] going up, with length of %i (%i)\n",  randomRow, randomColumn, ship->length, randomPos);
 
-            }
-        }
-        else if(!up){
-            if((randomColumn-1) + ship->length < COLUMNS){
-                printf("It works at position [%i,%i] going right, with length of %i (%i)\n",  randomRow, randomColumn, ship->length, randomPos);
-                valid = true;            
-            }else{
-                printf("It does NOT work at position [%i,%i] going right, with length of %i (%i)\n",  randomRow, randomColumn, ship->length, randomPos);
-
-            }
-        }
-        // If it doesn't, calculate randoms again
-    }while(!valid);
-
+    printf("Checking if valid... ship %i length\n", ship->length);
+    int valid = checkShipValid(gametable, randomRow, randomColumn, up, ship->length);
+    if (valid) 
+        printf("ship placement valid from [%i,%i] going %s\n", randomRow, randomColumn, up?"up":"right");
+    else
+        printf("Sorry, not valid.\n");
 }
 
 
