@@ -53,7 +53,6 @@
     * C - Cat
     * D - Dog
     * E - Elephant
-    * N - None
 */
 
 typedef struct{
@@ -90,6 +89,15 @@ int getCoordinates(POSITION[]);
 // Releases ship references from memory
 void freeShips(POSITION[]);
 
+void red();
+void green();
+void blue();
+void yellow();
+void purple();
+void reset();
+
+// Output coloring
+
 void pause();
 
 /*
@@ -121,15 +129,27 @@ int main(){
 
 void freeShips(POSITION gametable[]){
     // Freeing ships from positions
+    SHIP* ships[5];
+    int eShips=0;
     for(int i=0; i<100; i++) 
         if(gametable[i].ship){
-            SHIP* shipToFree = gametable[i].ship;
-            if (shipToFree->def != 'Z'){
-                free(gametable[i].ship);
-                gametable[i].ship = shipToFree;
-                gametable[i].ship->def = 'Z';
+            // Check if viewed
+            int viewed = false;
+            for(int j=0; j<5; j++){
+                if(gametable[i].ship == ships[j]) {
+                    viewed = true;
+                    break;
+                }
+            }
+            if(!viewed) {
+                ships[eShips++] = gametable[i].ship;
             }
         }
+
+    for(int i=0; i<eShips; i++){
+        // printf("Ship %c freed\n",ships[i]->def);
+        free(ships[i]);
+    }
 }
 void createTable(POSITION gametable[100]){
     srand((unsigned) time(NULL));
@@ -279,15 +299,24 @@ void displayGameTable(POSITION gametable[100]){
         for(int j=0; j<10; j++){
             int ePos = (ROWS * i) + j;
             POSITION currentPos = gametable[ePos];
-            // if(currentPos.hit){
-            //     if (currentPos.ship) {
-            //         if (currentPos.ship->sunk) printf("%c ", currentPos.ship->def);
-            //         else printf("H ");
-            //     }
-            //     else printf("M ");
-            // }
-            if(currentPos.ship){
-                printf("%c ", currentPos.ship->def);
+            if(currentPos.hit){
+                if (currentPos.ship) {
+                    if (currentPos.ship->sunk) {
+                        blue();
+                        printf("%c ", currentPos.ship->def);
+                        reset();
+                    }
+                    else {
+                        green();
+                        printf("H ");
+                        reset();
+                    }
+                }
+                else {
+                    red();
+                    printf("M ");
+                    reset();
+                }
             }
             else printf("O ");
         }
@@ -320,3 +349,12 @@ void pause() {
 	getchar();
 	getchar();
 }
+
+
+// Coloring
+void purple(){printf("\033[1;35m");};
+void blue(){printf("\033[1;34m");}
+void green(){ printf("\033[1;32m"); }
+void red () { printf("\033[1;31m"); }
+void yellow (){ printf("\033[1;33m"); }
+void reset () { printf("\033[0m"); }
