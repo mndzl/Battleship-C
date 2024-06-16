@@ -73,7 +73,7 @@ typedef struct{
 void displayGameTable(POSITION[]);
 
 // Creates table and places ships randomly
-void createTable(POSITION[]);
+void createTable(POSITION[], int*);
 
 // Places an individual ship in a random position in the board
 void placeShip(POSITION gametable[100], SHIP* ship);
@@ -82,7 +82,7 @@ void placeShip(POSITION gametable[100], SHIP* ship);
 int checkShipValid(POSITION gametable[100], int row, int column, int up, int length, int shipPositions[]);
 
 // Prompts for coordinates and gives feedback on attempt
-void attack(POSITION[], int*, char[]);
+void attack(POSITION[], int*, char[], int*);
 
 // Returns translated coordinates for 1D array
 int get1DCoordinate(char coordinates[]);
@@ -91,10 +91,10 @@ int get1DCoordinate(char coordinates[]);
 void freeShips(POSITION[]);
 
 // Returns true if coordinates are valid
-void getCoordinates(char coordinates[], POSITION gametable[]);
+void getCoordinates(char coordinates[], POSITION gametable[], int* shipsStanding, int attempts);
 
 // Exits game and clears ships
-void exitGame(POSITION[]);
+void exitGame(POSITION[], int*, int);
 
 void red();
 void green();
@@ -110,7 +110,6 @@ void pause();
 /*
     to-do
 
-    input verification on coordinates
     tries number
     binary file for saving game
 
@@ -120,15 +119,16 @@ void pause();
 int main(){
     POSITION gametable[100];
     int attempts = 0;
+    int shipsStanding = 0;
 
-    createTable(gametable);
+    createTable(gametable, &shipsStanding);
     displayGameTable(gametable);
 
     while (true){
         char coordinates[3];
-        getCoordinates(coordinates, gametable);
+        getCoordinates(coordinates, gametable, &shipsStanding, attempts);
 
-        attack(gametable, &attempts, coordinates);
+        attack(gametable, &attempts, coordinates, &shipsStanding);
         displayGameTable(gametable);
     };
 
@@ -138,7 +138,8 @@ int main(){
     return 0;
 }
 
-void exitGame(POSITION gametable[]){
+void exitGame(POSITION gametable[], int* shipsStanding, int attempts){
+    if(*shipsStanding==0) printf("CONGRATULATIONS! You have sunk all ships on %i attempts.\n", attempts);
     printf("END!");
     freeShips(gametable);
 
@@ -170,7 +171,7 @@ void freeShips(POSITION gametable[]){
     }
 }
 
-void createTable(POSITION gametable[100]){
+void createTable(POSITION gametable[100], int* shipsStanding){
     srand((unsigned) time(NULL));
 
     // Create table
@@ -192,6 +193,7 @@ void createTable(POSITION gametable[100]){
         ape->hits = 0;
         ape->length = 2;
         placeShip(gametable, ape);
+        (*shipsStanding)++;
     }else{
         printf("Could not create ship.");
     }
@@ -201,6 +203,7 @@ void createTable(POSITION gametable[100]){
         bear->hits = 0;
         bear->length = 3;
         placeShip(gametable, bear);
+        (*shipsStanding)++;
     }else{
         printf("Could not create ship.");
     }
@@ -210,6 +213,7 @@ void createTable(POSITION gametable[100]){
         cat->hits = 0;
         cat->length = 3;
         placeShip(gametable, cat);
+        (*shipsStanding)++;
     }else{
         printf("Could not create ship.");
     }
@@ -219,6 +223,7 @@ void createTable(POSITION gametable[100]){
         dog->hits = 0;
         dog->length = 4;
         placeShip(gametable, dog);
+        (*shipsStanding)++;
     }else{
         printf("Could not create ship.");
     }
@@ -228,6 +233,7 @@ void createTable(POSITION gametable[100]){
         elephant->hits = 0;
         elephant->length = 5;
         placeShip(gametable, elephant);
+        (*shipsStanding)++;
 
     }else{
         printf("Could not create ship.");
@@ -237,17 +243,17 @@ void createTable(POSITION gametable[100]){
 int checkShipValid(POSITION gametable[100], int row, int column, int up, int length, int shipPositions[]){
     // Recursive function towards ship direction to check if it's valid
     // Get 2 random numbers and multiply them to get the leading coordinate
-    printf("Checking position [%i,%i] with length %i\n", row, column, length);
+    // printf("Checking position [%i,%i] with length %i\n", row, column, length);
     int randomPos = ((ROWS * row) + column);
 
     // Ship can be placed entirely
     if(length <= 0) {
-        printf("works!\n");
+        // printf("works!\n");
         return true;
     }
     // Either ship detected or out of bounds of table
     if(row < 0 || column >= COLUMNS || gametable[randomPos].ship){
-        printf("Does not work!\n");
+        // printf("Does not work!\n");
         return false;
     } 
     // Add position of ship positions
@@ -273,7 +279,7 @@ void placeShip(POSITION gametable[100], SHIP* ship){
         int up = rand() % 2;
 
 
-        printf("Checking if valid... ship %i length\n", ship->length);
+        // printf("Checking if valid... ship %i length\n", ship->length);
         int shipPositions[ship->length];
         int valid = checkShipValid(gametable, randomRow, randomColumn, up, ship->length, shipPositions);
         if (valid) {
@@ -281,15 +287,15 @@ void placeShip(POSITION gametable[100], SHIP* ship){
             for(int i = 0; i < ship->length; i++) gametable[shipPositions[i]].ship = ship;
             placed = true;
         }
-        else printf("Sorry, not valid.\n");
+        // else printf("Sorry, not valid.\n");
     }while(!placed);
 }
 
-void getCoordinates(char coordinates[], POSITION gametable[]){
+void getCoordinates(char coordinates[], POSITION gametable[], int* shipsStanding, int attempts){
     char str[10];
     printf("Please enter coordinates (e.g., A5): "); scanf(" %s", str);
 
-    if (!strcmp(str, "QQ") || !strcmp(str, "qq")) exitGame(gametable);
+    if (!strcmp(str, "QQ") || !strcmp(str, "qq")) exitGame(gametable, shipsStanding, attempts);
 
     str[0] = toupper(str[0]);
 
@@ -300,7 +306,7 @@ void getCoordinates(char coordinates[], POSITION gametable[]){
     while(strlen(str) != 2 || row > 'J' || row < 'A' || column < '0' ){
         printf("Coordinates are not valid, please try again: "); scanf(" %s", str);
 
-        if (!strcmp(str, "QQ") || !strcmp(str, "qq")) exitGame(gametable);
+        if (!strcmp(str, "QQ") || !strcmp(str, "qq")) exitGame(gametable, shipsStanding, attempts);
 
         str[0] = toupper(str[0]);
 
@@ -353,12 +359,12 @@ void displayGameTable(POSITION gametable[100]){
     }
 }
 
-void attack(POSITION gametable[], int* attempts, char coordinates[]){
+void attack(POSITION gametable[], int* attempts, char coordinates[], int* shipsStanding){
     // Getting coordinates
     int ePos = get1DCoordinate(coordinates); 
     while(gametable[ePos].hit){
         printf("Position %s already hit, please select a different one.\n", coordinates);
-        getCoordinates(coordinates, gametable);
+        getCoordinates(coordinates, gametable, shipsStanding, *attempts);
         ePos = get1DCoordinate(coordinates); 
     }
 
@@ -374,6 +380,9 @@ void attack(POSITION gametable[], int* attempts, char coordinates[]){
         if(currentPos->ship->hits == currentPos->ship->length){
             printf("SHIP SUNK!\n");
             currentPos->ship->sunk = true;
+            (*shipsStanding)--;
+            printf("Ships standing: %i\n", *shipsStanding);
+            if((*shipsStanding) == 0) exitGame(gametable, shipsStanding, *attempts);
         }
     }else{
         printf("\nMISSED!\n");
