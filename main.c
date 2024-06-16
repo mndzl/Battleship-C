@@ -94,7 +94,11 @@ void freeShips(POSITION[]);
 void getCoordinates(char coordinates[], POSITION gametable[], int* shipsStanding, int attempts);
 
 // Exits game and clears ships
-void exitGame(POSITION[], int*, int);
+void exitGame(POSITION[], int, int);
+
+int saveGame(POSITION gametable[], int shipsStanding, int attempts);
+
+void retrieveGame(POSITION gametable[], int* shipsStanding, int* attempts);
 
 void red();
 void green();
@@ -110,20 +114,33 @@ void pause();
 /*
     to-do
 
-    tries number
     binary file for saving game
-
-
+    menu system
 */
 
 int main(){
+    FILE* file  = fopen("gamefile.bin", "rb");
+
     POSITION gametable[100];
     int attempts = 0;
     int shipsStanding = 0;
 
-    createTable(gametable, &shipsStanding);
-    displayGameTable(gametable);
+    printf("WELCOME TO BATTLESHIP\n\n");
 
+    if (file != NULL){
+        char option;
+        printf("Looks like you have a saved game, would you like to load it? (Y/N): "); scanf(" %c",&option);
+        option = toupper(option);
+        while (option != 'Y' && option != 'N'){
+            printf("Sorry, please try again: "); scanf(" %c", &option);
+        }
+        if (option == 'Y') retrieveGame(gametable, &attempts, &shipsStanding);
+        else createTable(gametable, &shipsStanding);
+    }else 
+        createTable(gametable, &shipsStanding);
+
+    displayGameTable(gametable);
+    
     while (true){
         char coordinates[3];
         getCoordinates(coordinates, gametable, &shipsStanding, attempts);
@@ -131,16 +148,91 @@ int main(){
         attack(gametable, &attempts, coordinates, &shipsStanding);
         displayGameTable(gametable);
     };
-
-    printf("END!");
     
     freeShips(gametable);
     return 0;
 }
 
-void exitGame(POSITION gametable[], int* shipsStanding, int attempts){
-    if(*shipsStanding==0) printf("CONGRATULATIONS! You have sunk all ships on %i attempts.\n", attempts);
-    printf("END!");
+int saveGame(POSITION gametable[100], int shipsStanding, int attempts){
+    FILE* file = fopen("gamefile.bin", "wb");
+    if(file == NULL){
+        printf("Could not save game.");
+        return 0;
+    }
+    printf("Saving game...\n");
+
+    fwrite(&attempts, sizeof(int), 1, file);
+    fwrite(&shipsStanding, sizeof(int), 1, file);
+
+    for(int i=0; i<100; i++){
+        fwrite(&gametable[i], sizeof(POSITION), 1, file);
+        if(gametable[i].ship != NULL) fwrite(gametable[i].ship, sizeof(SHIP), 1, file);
+    }
+
+    fclose(file);
+
+    printf("Game saved.\n");
+
+    return 1;
+}
+
+void retrieveGame(POSITION gametable[], int* attempts, int* shipsStanding){
+    printf("Loading file...\n");
+    FILE* file  = fopen("gamefile.bin", "rb");
+    if (file == NULL) {
+        printf("Could not open file.\n");
+        exit(0);
+    }
+    fread(attempts, sizeof(int), 1, file);
+    fread(shipsStanding, sizeof(int), 1, file);
+
+    SHIP *ape = calloc(1, sizeof(SHIP));
+    SHIP *bear = calloc(1, sizeof(SHIP));
+    SHIP *cat = calloc(1, sizeof(SHIP));
+    SHIP *dog = calloc(1, sizeof(SHIP));
+    SHIP *elephant = calloc(1, sizeof(SHIP));
+
+    for(int i=0; i<100; i++){
+        fread(&gametable[i], sizeof(POSITION), 1, file);
+
+        if(gametable[i].ship != NULL){
+            gametable[i].ship = calloc(1, sizeof(SHIP));
+            SHIP shipHolder;
+            fread(&shipHolder, sizeof(SHIP), 1, file);
+
+            switch (shipHolder.def)
+            {
+                case 'A':
+                    memcpy(ape, &shipHolder, sizeof(SHIP));
+                    gametable[i].ship = ape;
+                    break;
+                case 'B':
+                    memcpy(bear, &shipHolder, sizeof(SHIP));
+                    gametable[i].ship = bear;
+
+                    break;
+                case 'C':
+                    memcpy(cat, &shipHolder, sizeof(SHIP));
+                    gametable[i].ship = cat;
+                    break;
+                case 'D':
+                    memcpy(dog, &shipHolder, sizeof(SHIP));
+                    gametable[i].ship = dog;
+                    break;
+                case 'E':
+                    memcpy(elephant, &shipHolder, sizeof(SHIP));
+                    gametable[i].ship = elephant;
+                    break;
+            }
+        }
+    }
+    fclose(file);
+}   
+
+void exitGame(POSITION gametable[], int shipsStanding, int attempts){
+    if(shipsStanding==0) printf("CONGRATULATIONS! You have sunk all ships on %i attempts.\n", attempts);
+    printf("END!\n");
+    saveGame(gametable, shipsStanding, attempts);
     freeShips(gametable);
 
     exit(1);
@@ -172,6 +264,7 @@ void freeShips(POSITION gametable[]){
 }
 
 void createTable(POSITION gametable[100], int* shipsStanding){
+    printf("Creating new game...\n");
     srand((unsigned) time(NULL));
 
     // Create table
@@ -295,7 +388,7 @@ void getCoordinates(char coordinates[], POSITION gametable[], int* shipsStanding
     char str[10];
     printf("Please enter coordinates (e.g., A5): "); scanf(" %s", str);
 
-    if (!strcmp(str, "QQ") || !strcmp(str, "qq")) exitGame(gametable, shipsStanding, attempts);
+    if (!strcmp(str, "QQ") || !strcmp(str, "qq")) exitGame(gametable, *shipsStanding, attempts);
 
     str[0] = toupper(str[0]);
 
@@ -306,7 +399,7 @@ void getCoordinates(char coordinates[], POSITION gametable[], int* shipsStanding
     while(strlen(str) != 2 || row > 'J' || row < 'A' || column < '0' ){
         printf("Coordinates are not valid, please try again: "); scanf(" %s", str);
 
-        if (!strcmp(str, "QQ") || !strcmp(str, "qq")) exitGame(gametable, shipsStanding, attempts);
+        if (!strcmp(str, "QQ") || !strcmp(str, "qq")) exitGame(gametable, *shipsStanding, attempts);
 
         str[0] = toupper(str[0]);
 
@@ -375,14 +468,14 @@ void attack(POSITION gametable[], int* attempts, char coordinates[], int* shipsS
     POSITION* currentPos = &gametable[ePos];
     currentPos->hit = true;
     if (currentPos->ship){
-        printf("\nSHIP %c HIT!\n", currentPos->ship->def);
-        currentPos->ship->hits++;
+        currentPos->ship->hits = currentPos->ship->hits + 1;
+        printf("\nSHIP %c HIT! (%i/%i)\n", currentPos->ship->def, currentPos->ship->hits, currentPos->ship->length);
         if(currentPos->ship->hits == currentPos->ship->length){
             printf("SHIP SUNK!\n");
             currentPos->ship->sunk = true;
             (*shipsStanding)--;
             printf("Ships standing: %i\n", *shipsStanding);
-            if((*shipsStanding) == 0) exitGame(gametable, shipsStanding, *attempts);
+            if((*shipsStanding) == 0) exitGame(gametable, *shipsStanding, *attempts);
         }
     }else{
         printf("\nMISSED!\n");
@@ -391,9 +484,9 @@ void attack(POSITION gametable[], int* attempts, char coordinates[], int* shipsS
 }
 
 void pause() {
-	printf("\nPress ENTER to continue....\n");
-	getchar();
-	getchar();
+    printf("\nPress ENTER to continue....\n");
+    getchar();
+    getchar();
 }
 
 // Coloring
