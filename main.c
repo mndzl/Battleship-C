@@ -142,17 +142,57 @@ void createTable(POSITION gametable[100]){
     
     // Allocating ship dynamically to stay in memory through the game
     SHIP *ape = calloc(1, sizeof(SHIP));
+    SHIP *bear = calloc(1, sizeof(SHIP));
+    SHIP *cat = calloc(1, sizeof(SHIP));
+    SHIP *dog = calloc(1, sizeof(SHIP));
+    SHIP *elephant = calloc(1, sizeof(SHIP));
+
     if (ape != NULL){
-        ape->def = 'B';
+        ape->def = 'A';
         ape->sunk = false;
         ape->hits = 0;
-        ape->length = 3;
+        ape->length = 2;
+        placeShip(gametable, ape);
     }else{
         printf("Could not create ship.");
     }
+    if (bear != NULL){
+        bear->def = 'B';
+        bear->sunk = false;
+        bear->hits = 0;
+        bear->length = 3;
+        placeShip(gametable, bear);
+    }else{
+        printf("Could not create ship.");
+    }
+    if (cat != NULL){
+        cat->def = 'C';
+        cat->sunk = false;
+        cat->hits = 0;
+        cat->length = 3;
+        placeShip(gametable, cat);
+    }else{
+        printf("Could not create ship.");
+    }
+    if (dog != NULL){
+        dog->def = 'D';
+        dog->sunk = false;
+        dog->hits = 0;
+        dog->length = 4;
+        placeShip(gametable, dog);
+    }else{
+        printf("Could not create ship.");
+    }
+    if (elephant != NULL){
+        elephant->def = 'E';
+        elephant->sunk = false;
+        elephant->hits = 0;
+        elephant->length = 5;
+        placeShip(gametable, elephant);
 
-
-    placeShip(gametable, ape);
+    }else{
+        printf("Could not create ship.");
+    }
 }
 
 int checkShipValid(POSITION gametable[100], int row, int column, int up, int length, int shipPositions[]){
@@ -239,12 +279,15 @@ void displayGameTable(POSITION gametable[100]){
         for(int j=0; j<10; j++){
             int ePos = (ROWS * i) + j;
             POSITION currentPos = gametable[ePos];
-            if(currentPos.hit){
-                if (currentPos.ship) {
-                    if (currentPos.ship->sunk) printf("%c ", currentPos.ship->def);
-                    else printf("H ");
-                }
-                else printf("M ");
+            // if(currentPos.hit){
+            //     if (currentPos.ship) {
+            //         if (currentPos.ship->sunk) printf("%c ", currentPos.ship->def);
+            //         else printf("H ");
+            //     }
+            //     else printf("M ");
+            // }
+            if(currentPos.ship){
+                printf("%c ", currentPos.ship->def);
             }
             else printf("O ");
         }
