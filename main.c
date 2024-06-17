@@ -69,6 +69,8 @@ typedef struct{
 } POSITION;
 
 
+void runGame(POSITION[], int, int, int);
+
 // Prints current status of game
 void displayGameTable(POSITION[], int);
 
@@ -82,7 +84,7 @@ void placeShip(POSITION gametable[100], SHIP* ship);
 int checkShipValid(POSITION gametable[100], int row, int column, int up, int length, int shipPositions[]);
 
 // Prompts for coordinates and gives feedback on attempt
-void attack(POSITION[], int*, char[], int*, int);
+void attack(POSITION[], int*, char[], int*, int, int*);
 
 // Returns translated coordinates for 1D array
 int get1DCoordinate(char coordinates[]);
@@ -119,38 +121,15 @@ void pause();
 */
 
 int main(){
-    FILE* file  = fopen("gamefile.bin", "rb");
-
     POSITION gametable[100];
     int attempts = 0;
     int shipsStanding = 0;
-    int bestScore = 0;
+    int bestScore = 9999;
 
-    printf("WELCOME TO BATTLESHIP\n\n");
 
-    if (file != NULL){
-        char option;
-        printf("Looks like you have a saved game, would you like to load it? (Y/N): "); scanf(" %c",&option);
-        option = toupper(option);
-        while (option != 'Y' && option != 'N'){
-            printf("Sorry, please try again: "); scanf(" %c", &option);
-        }
-        if (option == 'Y') retrieveGame(gametable, &attempts, &shipsStanding);
-        else createTable(gametable, &shipsStanding);
-    }else 
-        createTable(gametable, &shipsStanding);
+    runGame(gametable, attempts, shipsStanding, bestScore);
 
-    displayGameTable(gametable, attempts);
-    
-    while (true){
-        char coordinates[3];
-        getCoordinates(coordinates, gametable, &shipsStanding, attempts);
 
-        attack(gametable, &attempts, coordinates, &shipsStanding, bestScore);
-        displayGameTable(gametable, attempts);
-    };
-    
-    freeShips(gametable);
     return 0;
 }
 
@@ -231,8 +210,7 @@ void retrieveGame(POSITION gametable[], int* attempts, int* shipsStanding){
 }   
 
 void exitGame(POSITION gametable[], int shipsStanding, int attempts){
-    if(shipsStanding==0) printf("CONGRATULATIONS! You have sunk all ships on %i attempts.\n", attempts);
-    saveGame(gametable, shipsStanding, attempts);
+    if (shipsStanding) saveGame(gametable, shipsStanding, attempts);
     freeShips(gametable);
 
     exit(1);
@@ -290,47 +268,47 @@ void createTable(POSITION gametable[100], int* shipsStanding){
     }else{
         printf("Could not create ship.");
     }
-    if (bear != NULL){
-        bear->def = 'B';
-        bear->sunk = false;
-        bear->hits = 0;
-        bear->length = 3;
-        placeShip(gametable, bear);
-        (*shipsStanding)++;
-    }else{
-        printf("Could not create ship.");
-    }
-    if (cat != NULL){
-        cat->def = 'C';
-        cat->sunk = false;
-        cat->hits = 0;
-        cat->length = 3;
-        placeShip(gametable, cat);
-        (*shipsStanding)++;
-    }else{
-        printf("Could not create ship.");
-    }
-    if (dog != NULL){
-        dog->def = 'D';
-        dog->sunk = false;
-        dog->hits = 0;
-        dog->length = 4;
-        placeShip(gametable, dog);
-        (*shipsStanding)++;
-    }else{
-        printf("Could not create ship.");
-    }
-    if (elephant != NULL){
-        elephant->def = 'E';
-        elephant->sunk = false;
-        elephant->hits = 0;
-        elephant->length = 5;
-        placeShip(gametable, elephant);
-        (*shipsStanding)++;
+    // if (bear != NULL){
+    //     bear->def = 'B';
+    //     bear->sunk = false;
+    //     bear->hits = 0;
+    //     bear->length = 3;
+    //     placeShip(gametable, bear);
+    //     (*shipsStanding)++;
+    // }else{
+    //     printf("Could not create ship.");
+    // }
+    // if (cat != NULL){
+    //     cat->def = 'C';
+    //     cat->sunk = false;
+    //     cat->hits = 0;
+    //     cat->length = 3;
+    //     placeShip(gametable, cat);
+    //     (*shipsStanding)++;
+    // }else{
+    //     printf("Could not create ship.");
+    // }
+    // if (dog != NULL){
+    //     dog->def = 'D';
+    //     dog->sunk = false;
+    //     dog->hits = 0;
+    //     dog->length = 4;
+    //     placeShip(gametable, dog);
+    //     (*shipsStanding)++;
+    // }else{
+    //     printf("Could not create ship.");
+    // }
+    // if (elephant != NULL){
+    //     elephant->def = 'E';
+    //     elephant->sunk = false;
+    //     elephant->hits = 0;
+    //     elephant->length = 5;
+    //     placeShip(gametable, elephant);
+    //     (*shipsStanding)++;
 
-    }else{
-        printf("Could not create ship.");
-    }
+    // }else{
+    //     printf("Could not create ship.");
+    // }
 }
 
 int checkShipValid(POSITION gametable[100], int row, int column, int up, int length, int shipPositions[]){
@@ -476,7 +454,7 @@ void displayGameTable(POSITION gametable[100], int attempts){
     }
 }
 
-void attack(POSITION gametable[], int* attempts, char coordinates[], int* shipsStanding, int bestScore){
+void attack(POSITION gametable[], int* attempts, char coordinates[], int* shipsStanding, int bestScore, int* winning){
     // Getting coordinates
     int ePos = get1DCoordinate(coordinates); 
     while(gametable[ePos].hit){
@@ -499,7 +477,10 @@ void attack(POSITION gametable[], int* attempts, char coordinates[], int* shipsS
             currentPos->ship->sunk = true;
             (*shipsStanding)--;
             printf("Ships standing: %i\n", *shipsStanding);
-            if((*shipsStanding) == 0) exitGame(gametable, *shipsStanding, *attempts);
+            if((*shipsStanding) == 0) {
+                *winning = true;
+                return;
+            }
         }
     }else{
         printf("\nMISSED!\n");
@@ -511,6 +492,58 @@ void pause() {
     printf("\nPress ENTER to continue....\n");
     getchar();
     getchar();
+}
+
+void runGame(POSITION gametable[], int attempts, int shipsStanding, int bestScore){
+    FILE* file  = fopen("gamefile.bin", "rb");
+    printf("WELCOME TO BATTLESHIP\n");
+    printf("Best score: %i\n\n", bestScore);
+
+    if (file != NULL){
+        char option;
+        printf("Looks like you have a saved game, would you like to load it? (Y/N): "); scanf(" %c",&option);
+        option = toupper(option);
+        while (option != 'Y' && option != 'N'){
+            printf("Sorry, please try again: "); scanf(" %c", &option);
+        }
+        if (option == 'Y') retrieveGame(gametable, &attempts, &shipsStanding);
+        else createTable(gametable, &shipsStanding);
+    }else 
+        createTable(gametable, &shipsStanding);
+
+    int winning = false;
+    while (!winning){
+        displayGameTable(gametable, attempts);  
+        char coordinates[3];
+        getCoordinates(coordinates, gametable, &shipsStanding, attempts);
+
+        attack(gametable, &attempts, coordinates, &shipsStanding, bestScore, &winning);
+        displayGameTable(gametable, attempts);
+    };
+    
+    // Winner
+    char option;
+    printf("\nGood job! You have won.\n");
+    if (attempts < bestScore){
+        printf("NEW BEST SCORE!!\n");
+        bestScore = attempts;
+    }
+    printf("Would you like to start another game? (Y/N): "); scanf(" %c", &option);
+    option = toupper(option);
+    while (option != 'Y' && option != 'N'){
+        printf("Sorry, please try again: "); scanf(" %c", &option);
+    }
+    if (option == 'Y') {
+        remove("gamefile.bin");
+        runGame(gametable, 0, 0, bestScore);
+    }
+    else {
+        remove("gamefile.bin");
+        printf("Thank you for playing!");
+    }
+
+    exitGame(gametable, shipsStanding, attempts);
+    fclose(file);
 }
 
 // Coloring
