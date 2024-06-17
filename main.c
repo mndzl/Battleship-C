@@ -70,7 +70,7 @@ typedef struct{
 
 
 // Prints current status of game
-void displayGameTable(POSITION[]);
+void displayGameTable(POSITION[], int);
 
 // Creates table and places ships randomly
 void createTable(POSITION[], int*);
@@ -82,7 +82,7 @@ void placeShip(POSITION gametable[100], SHIP* ship);
 int checkShipValid(POSITION gametable[100], int row, int column, int up, int length, int shipPositions[]);
 
 // Prompts for coordinates and gives feedback on attempt
-void attack(POSITION[], int*, char[], int*);
+void attack(POSITION[], int*, char[], int*, int);
 
 // Returns translated coordinates for 1D array
 int get1DCoordinate(char coordinates[]);
@@ -100,6 +100,7 @@ int saveGame(POSITION gametable[], int shipsStanding, int attempts);
 
 void retrieveGame(POSITION gametable[], int* shipsStanding, int* attempts);
 
+// Output Coloringgcc
 void red();
 void green();
 void blue();
@@ -107,15 +108,14 @@ void yellow();
 void purple();
 void reset();
 
-// Output coloring
-
 void pause();
 
 /*
     to-do
+    create new game after winning
+    saving best score
 
-    binary file for saving game
-    menu system
+
 */
 
 int main(){
@@ -124,6 +124,7 @@ int main(){
     POSITION gametable[100];
     int attempts = 0;
     int shipsStanding = 0;
+    int bestScore = 0;
 
     printf("WELCOME TO BATTLESHIP\n\n");
 
@@ -139,14 +140,14 @@ int main(){
     }else 
         createTable(gametable, &shipsStanding);
 
-    displayGameTable(gametable);
+    displayGameTable(gametable, attempts);
     
     while (true){
         char coordinates[3];
         getCoordinates(coordinates, gametable, &shipsStanding, attempts);
 
-        attack(gametable, &attempts, coordinates, &shipsStanding);
-        displayGameTable(gametable);
+        attack(gametable, &attempts, coordinates, &shipsStanding, bestScore);
+        displayGameTable(gametable, attempts);
     };
     
     freeShips(gametable);
@@ -231,7 +232,6 @@ void retrieveGame(POSITION gametable[], int* attempts, int* shipsStanding){
 
 void exitGame(POSITION gametable[], int shipsStanding, int attempts){
     if(shipsStanding==0) printf("CONGRATULATIONS! You have sunk all ships on %i attempts.\n", attempts);
-    printf("END!\n");
     saveGame(gametable, shipsStanding, attempts);
     freeShips(gametable);
 
@@ -419,7 +419,31 @@ int get1DCoordinate(char coordinates[]){
     return (ROWS * row) + column;
 }
 
-void displayGameTable(POSITION gametable[100]){
+void displayGameTable(POSITION gametable[100], int attempts){
+    // Floating ships
+    SHIP* ships[6];
+    int eSizeShips = 0;
+    for(int i=0;i<100;i++){
+        if(gametable[i].ship){
+            int found = false;
+            for(int j=0; j<eSizeShips;j++){
+                if (ships[j] == gametable[i].ship){
+                    found = true;
+                    break;
+                }
+            }
+            if(!found)ships[eSizeShips++] = gametable[i].ship;
+        }
+    }
+    printf("\n");
+    for(int i=0; i<eSizeShips; i++){
+        printf("%c: %s\n", ships[i]->def, ships[i]->sunk? "Sunk" : "Floating" );
+    }
+
+    // Missiles Fired
+    printf("\nMissiles Fired: %i\n", attempts);
+
+    // Table
     printf("\n    0 1 2 3 4 5 6 7 8 9\n");
     printf("   --------------------\n");
     for(int i=0; i<10; i++){
@@ -452,7 +476,7 @@ void displayGameTable(POSITION gametable[100]){
     }
 }
 
-void attack(POSITION gametable[], int* attempts, char coordinates[], int* shipsStanding){
+void attack(POSITION gametable[], int* attempts, char coordinates[], int* shipsStanding, int bestScore){
     // Getting coordinates
     int ePos = get1DCoordinate(coordinates); 
     while(gametable[ePos].hit){
@@ -469,7 +493,7 @@ void attack(POSITION gametable[], int* attempts, char coordinates[], int* shipsS
     currentPos->hit = true;
     if (currentPos->ship){
         currentPos->ship->hits = currentPos->ship->hits + 1;
-        printf("\nSHIP %c HIT! (%i/%i)\n", currentPos->ship->def, currentPos->ship->hits, currentPos->ship->length);
+        printf("\nSHIP HIT!\n");
         if(currentPos->ship->hits == currentPos->ship->length){
             printf("SHIP SUNK!\n");
             currentPos->ship->sunk = true;
